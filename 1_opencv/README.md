@@ -1,5 +1,7 @@
 ## 과제 1 이미지 불러오기 및 그레이스케일 변환
-
+- OpenCV로 컬러 이미지를 불러오고 화면에 출력
+- 원본 이미지와 그레이스케일로 변환된 이미지 나란히 표시
+  
 ### 코드 
 - 01.py
 
@@ -34,13 +36,29 @@ cv.imwrite('./soccer_result.jpg', resized_img)
 cv.waitKey()
 cv.destroyAllWindows()```
 ```
+### 핵심 코드 및 설명
+- Grayscale 이미지 변환 및 채널 수 맞추기
+  ```
+  gray=cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+  gray_3channel=cv.cvtColor(gray, cv.COLOR_GRAY2BGR) # 흑백 이미지는 채널이 1개이므로 채널 수 3개로 통일
+  ```
+- 이미지 두 장을 수평으로 나란히 연결하는 함수 사용
+  ```
+  combined_img=np.hstack((img, gray_3channel))
+  ```
+-  노트북으로 실행 후 이미지 사이즈가 커서 잘리던 문제 수정
+  : cv.resize() 함수사용
+      
 
 ### 실행 결과
 
 ![과제1 결과](./soccer_result.jpg)
 <br><br>
 
+
 ## 과제 2 페인팅 붓 크기 조절 기능 추가
+- 이미지를 불러와 마우스 입력으로 붓질
+- 키보드 입력을 통한 붓 크기 조절
 
 ### 코드 
 - 02.py
@@ -117,13 +135,27 @@ while True:
 # 모든 창을 닫고 프로그램 종료
 cv.destroyAllWindows()
 ```
+### 핵심 코드 및 설명
+- 마우스 상태 변수 활용
+  ```
+   elif event == cv.EVENT_MOUSEMOVE: # 드래그(MOUSEMOVE)
+        if Lbutton_down:
+            cv.circle(img, (x, y), brush_size, (255, 0, 0), -1)
+        elif Rbutton_down:
+            cv.circle(img, (x, y), brush_size, (0, 0, 255), -1)
+  ```
+: 클릭했을 때만 점을 찍는 게 아니라,
+버튼이 눌려 있는 상태를 변수로 기억해서 드래그(MOUSEMOVE) 중에도 연속해서 그릴 수 있게 함
 
 ### 실행 결과
 
 ![과제2 결과](./02.png)
 <br><br>
 
+
 ## 과제 3 마우스로 영역 선택 및 ROI 추출
+- 이미지를 불러오고 사용자가 마우스로 관심영역(ROI)을 선택
+- 선택한 영역만 따로 저장하거나 표시
 
 ### 코드 
 - 03.py
@@ -228,6 +260,7 @@ cv.destroyAllWindows()
 <br><br>
 
 ### 실행 결과
-
+![과제3 실행](./ROI_window.png)
 ![과제3 결과](./extracted_roi.jpg)
+
 <br><br>
