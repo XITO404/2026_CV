@@ -54,6 +54,6 @@ Teddy      | 22.42           | 3.8926         <br>
 <br>
 The closest object is 'Frog', and the farthest object is 'Painting'.
 <br>
-![과제 3 결과](./03_reslut.png)
+![과제 3 결과](./03_result.png)
 
 <br><br>
