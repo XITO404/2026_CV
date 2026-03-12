@@ -235,26 +235,26 @@ depth_map[valid_mask] = (f * B) / disparity[valid_mask]
 # -----------------------------
 # 3. ROI별 통계 계산
 # -----------------------------
-results = {}
+results = {}  # 결과 저장용
 
-for name, (x, y, w, h) in rois.items():
-    roi_disp = disparity[y:y+h, x:x+w]
-    roi_depth = depth_map[y:y+h, x:x+w]
+for name, (x, y, w, h) in rois.items():  # 각 ROI에 대해 반복
+    roi_disp = disparity[y:y+h, x:x+w]   # ROI 영역의 Disparity 추출
+    roi_depth = depth_map[y:y+h, x:x+w]  # ROI 영역의 Depth 추출
     
     # 유효한 픽셀 마스크 생성
     roi_valid = roi_disp > 0
 
-    if np.any(roi_valid):
-        mean_disp = np.mean(roi_disp[roi_valid])
-        mean_depth = np.mean(roi_depth[roi_valid])
-    else:
-        mean_disp = 0.0
-        mean_depth = 0.0
+    if np.any(roi_valid):  # 유효한 픽셀이 있을 경우
+        mean_disp = np.mean(roi_disp[roi_valid])   # 유효 픽셀의 평균 Disparity
+        mean_depth = np.mean(roi_depth[roi_valid]) # 유효 픽셀의 평균 Depth
+    else:                  # 유효한 픽셀이 없을 경우
+        mean_disp = 0.0    # 평균 Disparity 0으로 설정
+        mean_depth = 0.0   # 평균 Depth 0으로 설정
 
     results[name] = {
         "mean_disparity": mean_disp,
         "mean_depth": mean_depth
-    }
+    }                      # 딕셔너리에 결과 저장
 
 # -----------------------------
 # 4. 분석 결과 출력
