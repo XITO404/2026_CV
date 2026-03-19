@@ -76,6 +76,34 @@ else:
 </div>
 </details>
 
+### 핵심 코드
+**(1) grayscale 이미지 변환**
+```python
+gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+```
+- cv.cvtColor(): 이미지 색상 공간을 변환
+- cv.COLOR_BGR2GRAY: BGR 컬러 이미지를 Sobel 필터 적용에 필요한 1채널 grayscale로 변환
+
+
+**(2) Sobel 필터를 이용한 x, y축 에지 검출**
+```python
+sobel_x = cv.Sobel(gray, cv.CV_64F, 1, 0, ksize=3)
+sobel_y = cv.Sobel(gray, cv.CV_64F, 0, 1, ksize=3)
+```
+- cv.Sobel(): 이미지의 미분값을 계산하여 x축 방향(1, 0)과 y축 방향(0, 1)의 에지 검출
+- cv.CV_64F: 미분 연산 중 발생하는 음수 값을 보존하기 위해 64비트 실수형으로 계산
+- ksize=3: 3x3 크기의 소벨 커널
+
+
+**(3) 에지 강도(Magnitude) 계산 및 시각화를 위한 uint8 변환**
+```python
+edge_mag = cv.magnitude(sobel_x, sobel_y)
+edge_strength = cv.convertScaleAbs(edge_mag)
+```
+- cv.magnitude(): x축과 y축의 기울기 결과값을 기하학적으로 합산($\sqrt{x^2 + y^2}$), 전체 에지 강도 계산
+- cv.convertScaleAbs(): 실수형 데이터를 절댓값 변환 후, 시각화가 가능한 0~255 범위의 8비트(uint8) 타입으로 변경
+
+
 ### 실행 결과
 
 ![과제 1 결과](./Figure%201.png)
@@ -84,11 +112,10 @@ else:
 
 
 
-
+---
 ## 과제 2 캐니 에지 및 허프 변환을 이용한 직선 검출
 - dabo 이미지에 캐니 에지 검출을 사용하여 에지 맵 생성
-- 허프 변환을 사용하여 이미지에서 직선 검출
-- 검출된 직선을 원본 이미지에서 빨간색으로 표시
+- 허프 변환을 사용하여 직선 검출 후 원본 이미지에 빨간색으로 표시
 
 ### 요구사항
 - cv.Canny()를 사용하여 에지 맵 생성
@@ -165,6 +192,35 @@ plt.show()  # 완성된 결과 창 띄우기
 </details>
 
 
+### 핵심 코드
+**(1) 캐니 에지 검출**
+```python
+edges = cv.Canny(gray, 100, 200)
+```
+- cv.Canny(): 이미지에서 강한 에지만을 남기는 에지 맵 생성
+- 임계값으로 threshold1=100, threshold2=200 설정: 하한값과 상한값 사이의 픽셀들을 분석, 약한 에지 중 강한 에지와 연결된 에지 검출
+
+**(2) 허프 변환을 이용한 직선 검출**
+```python
+lines = cv.HoughLinesP(edges, 1, np.pi/180, 120, minLineLength=40, maxLineGap=10)
+```
+- cv.HoughLinesP(): 에지 맵에서 실제 직선 성분 추출
+- rho=1: 거리 해상도 (1픽셀 단위)
+- theta=np.pi/180: 각도 해상도 (라디안, 약 1도 단위)
+- 120: 임계값 (투표 시 직선으로 판단하기 위한 최소 교차 횟수)
+- minLineLength: 검출할 직선의 최소 길이
+- maxLineGap: 동일 선상의 점들을 하나의 직선으로 잇기 위한 최대 간격
+
+**(3) 검출된 직선 그리기 및 RGB 변환**
+```python
+cv.line(line_img, (x1, y1), (x2, y2), (0, 0, 255), 2)
+img_rgb = cv.cvtColor(img, cv.COLOR_BGR2RGB)
+img_lines_rgb = cv.cvtColor(line_img, cv.COLOR_BGR2RGB)
+```
+- cv.line(): 검출된 좌표 (x1, y1)에서 (x2, y2)까지 두께 2의 빨간색(0, 0, 255) 직선을 그림
+- OpenCV의 BGR 형식을 Matplotlib 시각화 환경에 맞추기 위해 RGB 형식으로 변환
+
+
 ### 실행 결과
 
 ![과제 2 결과](./Figure%202.png)
@@ -173,7 +229,7 @@ plt.show()  # 완성된 결과 창 띄우기
 
 
 
-
+---
 ## 과제 3 GrabCut을 이용한 대화식 영역 분할 및 객체 추출
 - coffee cup 이미지로 사용자가 지정한 사각형 영역을 바탕으로 GrabCut 알고리즘을 사용하여 객체 추출
 - 객체 추출 결과를 마스크 형태로 시각화
@@ -252,7 +308,41 @@ plt.show()
 </div>
 </details>
 
+### 핵심 코드
+**(1) GrabCut 초기화 및 사각형 영역(ROI) 설정**
+```python
+mask = np.zeros(img.shape[:2], np.uint8)    # GrabCut을 위한 초기 마스크 생성
+bgdModel = np.zeros((1, 65), np.float64)
+fgdModel = np.zeros((1, 65), np.float64)
+rect = (50, 50, img.shape[1]-100, img.shape[0]-100)
+```
+- mask를 이미지 크기와 동일하게 0으로 초기화
+- 배경 모델 bgdModel, 전경 모델 fgdModel을 0으로 초기화
+- rect 변수에 추출하고자 하는 객체(커피컵)가 포함된 사각형 영역을 (x, y, w, h) 형식으로 설정
+- 좌표값에 img.shape 사용; 입력 이미지 해상도 변화에 유연하게 대응하기 위해 동적 ROI 설정<br>
+: 상하좌우 50픽셀 정도를 여백으로 남기고, 중앙의 넓은 영역을 자동으로 ROI(관심 영역)로 설정하기 위해 이미지의 가로(shape[1])와 세로(shape[0]) 길이를 활용해 계산
 
+**(2) cv.grabCut()을 이용한 대화식 영역 분할**
+```python
+cv.grabCut(img, mask, rect, bgdModel, fgdModel, 5, cv.GC_INIT_WITH_RECT)
+```
+- cv.grabCut(): 전경(fgdModel)과 배경(bgdModel)을 분하는 반복 연산 5회 수행
+- cv.GC_INIT_WITH_RECT: 사각형 영역 ROI를 기준으로 전경 객체 추정
+
+**(3) 마스크 값 처리 및 배경 제거**
+```python
+mask2 = np.where((mask == cv.GC_BGD) | (mask == cv.GC_PR_BGD), 0, 1).astype('uint8')
+img_grabcut = img * mask2[:, :, np.newaxis]
+```
+- np.where(): 확실한 배경(0)과 배경일 가능성이 높은 영역(2)를 0으로, 전경 영역(1, 3)을 1로 이진화
+- 이진 마스크 합성 및 배경 제거<br>
+: 이진화된 mask2를 원본 이미지에 곱하여 전경 객체를 추출<br>
+: 이때 배경은 마스크 값 0이 곱해지므로 검은색으로 처리됨
+- 채널 확장 및 행렬 연산<br>
+: 1채널인 mask2를 원본과 동일한 3채널로 확장(np.newaxis)하여 행렬 연산 수행<br>
+: 최종적으로 배경이 제거된 3컬러 객체 이미지를 생성
+
+  
 ### 실행 결과
 ![과제 3 결과](./Figure%203.png)
 <br><br>
