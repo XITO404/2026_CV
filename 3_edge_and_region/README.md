@@ -78,7 +78,7 @@ else:
 
 ### 실행 결과
 
-![과제 1 결과](./figure 1.png)
+![과제 1 결과](./Figure 1.png)
 <br><br>
 
 
@@ -167,7 +167,7 @@ plt.show()  # 완성된 결과 창 띄우기
 
 ### 실행 결과
 
-![과제 2 결과](./figure 2.png)
+![과제 2 결과](./Figure 2.png)
 <br><br>
 
 
@@ -254,7 +254,7 @@ plt.show()
 
 
 ### 실행 결과
-![과제 3 결과](./figure 3.png)
+![과제 3 결과](./Figure 3.png)
 <br><br>
 
 
