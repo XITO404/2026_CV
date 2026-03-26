@@ -65,19 +65,19 @@ else:
                                    flags=cv.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
 
         # 8. Matplotlib을 이용한 최종 결과 시각화 출력
-        plt.figure(figsize=(20, 10))
+        plt.figure(figsize=(24, 8))  # 전체 창 크기 설정
 
-        # 위쪽: 특징점 매칭 결과, img1과 img2의 특징점 매칭 선 시각화
-        plt.subplot(2, 1, 1)    # 2행 1열 중 첫 번째 위치
-        plt.imshow(cv.cvtColor(img_match, cv.COLOR_BGR2RGB))    # BGR을 RGB로 변환
-        plt.title('Feature Matching Result')
-        plt.axis('off') # 좌표축 숨김
-
-        # 아래쪽: 호모그래피 변환 결과 (Warped Image)
-        plt.subplot(2, 1, 2)    # 2행 1열 중 두 번째 위치
+        # 왼쪽: 호모그래피 변환 결과 (Warped Image)
+        plt.subplot(1, 2, 1)    # 1행 2열 중 첫 번째 위치
         plt.imshow(cv.cvtColor(img2_warped, cv.COLOR_BGR2RGB))
         plt.title('Warped Image (img2 aligned to img1)')
         plt.axis('off')
+
+        # 오른쪽: 특징점 매칭 결과
+        plt.subplot(1, 2, 2)    # 1행 2열 중 두 번째 위치
+        plt.imshow(cv.cvtColor(img_match, cv.COLOR_BGR2RGB))    # BGR을 RGB로 변환
+        plt.title('Feature Matching Result')
+        plt.axis('off') # 좌표축 숨김
 
         # 레이아웃 간격 조정 및 최종 출력
         plt.tight_layout()
