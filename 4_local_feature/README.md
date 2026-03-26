@@ -171,12 +171,13 @@ else:
 </details>
 
 ### 핵심 코드
-**(1) 매칭: BFMatcher와 L2 Norm**
+**(1) BFMatcher와 L2 Norm**
 ```python
 bf = cv.BFMatcher(cv.NORM_L2, crossCheck=False)
 ```
-- SIFT 기술자(Descriptor)는 128차원의 실수형 벡터이므로, 두 점 사이의 기하학적 거리인 L2 Norm(유클리디안 거리)을 사용하여 유사도 측정
-- crossCheck=False 설정을 통해 knnMatch에서 상위 2개의 후보군을 뽑아낼 수 있도록 구현
+- BFMatcher (Brute-Force Matcher): 첫 번째 이미지의 모든 특징점 기술자와 두 번째 이미지의 모든 기술자를 일일이 전수 조사(Brute-Force)하여 가장 거리가 가까운 쌍을 찾아내는 방식
+- L2 Norm(유클리디안 거리): SIFT 기술자(Descriptor)는 128차원의 실수형 벡터이므로, 두 점 사이의 직선 거리인 L2 Norm을 사용하여 유사도 측정, 거리가 짧을수록 두 특징점은 서로 닮은 것으로 판단
+- crossCheck=False 설정을 통해 knnMatch에서 상위 2개의 후보군을 추출, 이후 Lowe's Ratio Test를 통한 정밀 필터링 가능
 
 **(2) 신뢰도 확보: Lowe's Ratio Test**
 ```python
@@ -287,19 +288,19 @@ else:
                                    flags=cv.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
 
         # 8. Matplotlib을 이용한 최종 결과 시각화 출력
-        plt.figure(figsize=(20, 10))
+        plt.figure(figsize=(24, 8))  # 전체 창 크기 설정
 
-        # 위쪽: 특징점 매칭 결과, img1과 img2의 특징점 매칭 선 시각화
-        plt.subplot(2, 1, 1)    # 2행 1열 중 첫 번째 위치
-        plt.imshow(cv.cvtColor(img_match, cv.COLOR_BGR2RGB))    # BGR을 RGB로 변환
-        plt.title('Feature Matching Result')
-        plt.axis('off') # 좌표축 숨김
-
-        # 아래쪽: 호모그래피 변환 결과 (Warped Image)
-        plt.subplot(2, 1, 2)    # 2행 1열 중 두 번째 위치
+        # 왼쪽: 호모그래피 변환 결과 (Warped Image)
+        plt.subplot(1, 2, 1)    # 1행 2열 중 첫 번째 위치
         plt.imshow(cv.cvtColor(img2_warped, cv.COLOR_BGR2RGB))
         plt.title('Warped Image (img2 aligned to img1)')
         plt.axis('off')
+
+        # 오른쪽: 특징점 매칭 결과
+        plt.subplot(1, 2, 2)    # 1행 2열 중 두 번째 위치
+        plt.imshow(cv.cvtColor(img_match, cv.COLOR_BGR2RGB))    # BGR을 RGB로 변환
+        plt.title('Feature Matching Result')
+        plt.axis('off') # 좌표축 숨김
 
         # 레이아웃 간격 조정 및 최종 출력
         plt.tight_layout()
@@ -313,24 +314,35 @@ else:
 </details>
 
 ### 핵심 코드
-**(1) RANSAC 기반 호모그래피(Homography) 추정**
+**(1) knnMatch 및 비율 테스트를 통한 대응점 선별**
+```python
+# 각 특징점당 상위 2개의 유사 후보군 검출 (k=2)
+matches = bf.knnMatch(des1, des2, k=2)
+# Lowe's Ratio Test (임계값 0.7) 적용
+if m.distance < 0.7 * n.distance:
+    good_matches.append(m)
+```
+- 가장 유사한 특징점($m$)이 두 번째 후보($n$)보다 확연히 가까운 경우에만 유효한 매칭으로 인정 (0.7 이내)
+- 배경의 반복 패턴 등에서 발생하는 모호한 매칭(False Positive)을 사전에 차단, 이후 호모그래피 행렬 계산의 기초가 되는 대응점들의 신뢰도를 확보
+
+**(2) RANSAC 기반 호모그래피(Homography) 추정**
 ```python
 # dst_pts(img2)를 src_pts(img1) 좌표계로 매핑하기 위한 행렬 계산
 M, mask = cv.findHomography(dst_pts, src_pts, cv.RANSAC, 5.0)
 ```
-- 두 평면 사이의 8자유도 투영 변환 행렬($M$)을 추출
-- RANSAC 알고리즘을 적용하여 오매칭된 이상치(Outlier)를 배제하고, 거리 오차 5.0 픽셀 이내의 유효한 대응점들로만 정밀한 변환 행렬을 산출
+- RANSAC 알고리즘을 적용하여 잘못 매칭된 이상치(Outlier)를 배제하고, 거리 오차 5.0 픽셀 이내의 유효한 대응점들로만 정밀한 변환 행렬을 산출
+- 변환 행렬($M$)은 두 이미지 평면 사이의 기하학적 투영 관계를 나타냄
 
 
-**(2) Perspective Warping 및 이미지 정합(Alignment)**
+**(3) Perspective Warping 및 이미지 정합(Alignment)**
 ```python
 # img2를 img1 평면에 맞게 투영 변환
 img2_warped = cv.warpPerspective(img2, M, (res_width, res_height))
 # 변환된 도화지 상의 (0,0) 위치에 기준 영상(img1) 배치
 img2_warped[0:h1, 0:w1] = img1
 ```
-- 원리: 계산된 행렬 $M$을 이용하여 img2의 시점을 img1과 일치하도록 기하학적으로 변환(Warping)
-- 두 이미지의 좌표계를 하나로 통합하여, 서로 다른 각도에서 촬영된 영상을 자연스럽게 이어 붙인 파노라마(Stitching) 결과물을 생성
+- cv.warpPerspective(): 산출된 행렬 $M$을 이용하여 img2의 시점을 img1과 일치하도록 기하학적으로 변환(Warping)
+- 서로 다른 각도에서 촬영된 두 이미지의 좌표계를 하나로 통합하여, 자연스럽게 이어진 파노라마(Stitching) 결과물을 생성
 
 
 ### 실행 결과
